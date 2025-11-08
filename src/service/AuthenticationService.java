@@ -125,13 +125,16 @@ public class AuthenticationService {
         byte[] keyBytes = CryptoUtil.deriveKey(password, salt, iterations);
         SecretKey key = CryptoUtil.keyFromBytes(keyBytes);
         byte[] iv = CryptoUtil.generateRandomBytes(12);
+        byte[] signingKey = CryptoUtil.generateRandomBytes(32);
+
         // start with an empty json object
         String initialJson = """
                 {
                   "name": "%s",
+                  "signing_key": "%s",
                   "credentials": []
                 }
-                """.formatted(FileStorageUtil.DEFAULT_VAULT_NAME);
+                """.formatted(FileStorageUtil.DEFAULT_VAULT_NAME, Base64.getEncoder().encodeToString(signingKey));
 
         byte[] ciphertext = CryptoUtil.encrypt(key, initialJson.getBytes(StandardCharsets.UTF_8), iv);
         Arrays.fill(keyBytes, (byte) 0); // wipe memory
@@ -140,7 +143,8 @@ public class AuthenticationService {
                 iterations,
                 new String(Base64.getEncoder().encode(salt)),
                 new String(Base64.getEncoder().encode(iv)),
-                new String(Base64.getEncoder().encode(ciphertext))
+                new String(Base64.getEncoder().encode(ciphertext)),
+                CryptoUtil.computeHmac(signingKey, salt, iv, iterations, ciphertext)
         );
 
         String vaultJson = mapper.writerWithDefaultPrettyPrinter()

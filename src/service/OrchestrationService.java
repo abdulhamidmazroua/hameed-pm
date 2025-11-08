@@ -16,6 +16,7 @@ import java.io.Console;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.util.*;
 
 public class OrchestrationService {
@@ -149,7 +150,7 @@ public class OrchestrationService {
 
    private boolean openVault()  throws Exception {
 
-       System.out.println("Which Vault do you want to open, please use the following command: open <VaultName>");
+       System.out.println("Which Vault do you want to open, please use the following type: <VaultName>");
 
        // use the file storage to retrieve all vaults
        List<String> userVaultNames = FileStorageUtil.getUserVaultNames(authenticationService.getAuthenticatedUser());
@@ -158,8 +159,27 @@ public class OrchestrationService {
        for (int i = 0; i < userVaultNames.size(); i++) {
            System.out.println("\u001B[31m" + (i + 1) + ". \u001B[0m " + userVaultNames.get(i));
        }
-       System.out.print(">> ");
-       String vaultChosen = input.nextLine().split(" ")[1];
+       String vaultChosen;
+       while (true) {
+           System.out.print(">> ");
+           vaultChosen = input.nextLine();
+           if (!userVaultNames.contains(vaultChosen)) {
+               System.err.println("There is no vault with this name: " + vaultChosen);
+           } else {
+               break;
+           }
+       }
+
+       // load and convert from json to object
+       String vaultJson = FileStorageUtil.loadVaultFile(authenticationService.getAuthenticatedUser(), vaultChosen);
+       VaultFile vaultFile = mapper.readValue(vaultJson, VaultFile.class);
+
+
+       // get and decode the values
+       int iterations = vaultFile.getIterations();
+       byte[] salt = Base64.getDecoder().decode(vaultFile.getSaltBase64());
+       byte[] iv = Base64.getDecoder().decode(vaultFile.getIvBase64());
+       byte[] ciphertext = Base64.getDecoder().decode(vaultFile.getCiphertextBase64());
 
        // enter the password again to open vault
        char[] password;
@@ -169,15 +189,6 @@ public class OrchestrationService {
            // enter password again for vault
            System.out.print("Enter password again to unlock vault: ");
            password = readPasswordFromConsoleOrFallback();
-           // load and convert from json to object
-           String vaultJson = FileStorageUtil.loadVaultFile(authenticationService.getAuthenticatedUser(), vaultChosen);
-           VaultFile vaultFile = mapper.readValue(vaultJson, VaultFile.class);
-
-           // get and decode the values
-           int iterations = vaultFile.getIterations();
-           byte[] salt = Base64.getDecoder().decode(vaultFile.getSaltBase64());
-           byte[] iv = Base64.getDecoder().decode(vaultFile.getIvBase64());
-           byte[] ciphertext = Base64.getDecoder().decode(vaultFile.getCiphertextBase64());
 
            // derive the key
            vaultKeyBytes = CryptoUtil.deriveKey(password, salt, iterations);
@@ -187,8 +198,18 @@ public class OrchestrationService {
            // decrypt attempt
            try {
                String decryptedVault = new String(CryptoUtil.decrypt(vaultKey, ciphertext, iv), StandardCharsets.UTF_8);
+
+               // get the hash and check tampering
+               Vault tempVault = mapper.readValue(decryptedVault, Vault.class);
+               byte[] signingKey = Base64.getDecoder().decode(tempVault.getSigningKey());
+               String generatedHash = CryptoUtil.computeHmac(signingKey, salt, iv, iterations, ciphertext);
+
+               if (!MessageDigest.isEqual(Base64.getDecoder().decode(vaultFile.getHashBase64()), Base64.getDecoder().decode(generatedHash))) {
+                   throw new SecurityException("⚠️ Vault tampered with!");
+               }
+
                // write to the current vault field
-               this.vault = mapper.readValue(decryptedVault, Vault.class);
+               this.vault = tempVault;
                isValidKey = true;
                System.out.println();
                System.out.println("✅ Vault opening was successful!");
@@ -198,6 +219,9 @@ public class OrchestrationService {
            } catch (BadPaddingException ex) {
                System.out.println("Invalid Password.");
                attempts++;
+           } catch (SecurityException ex) {
+               System.err.println(ex.getMessage());
+               throw ex;
            } catch (Exception ex) {
                throw ex;
            }
@@ -286,6 +310,14 @@ public class OrchestrationService {
        // replace vault file fields with the new iv and the new ciphertext
        vaultFile.setIvBase64(new String(Base64.getEncoder().encode(newIV), StandardCharsets.UTF_8));
        vaultFile.setCiphertextBase64(new String(Base64.getEncoder().encode(updatedEncryptedJson), StandardCharsets.UTF_8));
+
+       // add the new hash to avoid tampering
+       vaultFile.setHashBase64(CryptoUtil.computeHmac(
+               Base64.getDecoder().decode(vault.getSigningKey()),
+               Base64.getDecoder().decode(vaultFile.getSaltBase64()),
+               Base64.getDecoder().decode(vaultFile.getIvBase64()),
+               vaultFile.getIterations(),
+               updatedEncryptedJson));
 
        // save the updated vault file
        String vaultJson = mapper.writerWithDefaultPrettyPrinter()

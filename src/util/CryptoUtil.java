@@ -4,7 +4,9 @@ import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.ByteBuffer;
 import java.security.*;
+import java.util.Base64;
 
 public class CryptoUtil {
 
@@ -47,6 +49,17 @@ public class CryptoUtil {
         } finally {
             spec.clearPassword();
         }
+    }
+
+    public static String computeHmac(byte[] signingKey, byte[] salt, byte[] iv, int iterations, byte[] ciphertext) throws Exception {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(signingKey, "HmacSHA256"));
+        mac.update(salt);
+        mac.update(iv);
+        mac.update(ByteBuffer.allocate(4).putInt(iterations).array());
+        mac.update(ciphertext);
+        return Base64.getEncoder().encodeToString(mac.doFinal());
+
     }
 
 }

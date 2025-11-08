@@ -14,6 +14,7 @@ import java.util.Optional;
 public class Vault {
 
     private String name;
+    private String signingKey;
     private List<Credential> credentials = new ArrayList<>();
 
     public Vault() {}
@@ -37,6 +38,14 @@ public class Vault {
 
     public void setCredentials(List<Credential> credentials) {
         this.credentials = credentials;
+    }
+
+    public String getSigningKey() {
+        return signingKey;
+    }
+
+    public void setSigningKey(String signingKey) {
+        this.signingKey = signingKey;
     }
 
     public void add(Credential credential) {

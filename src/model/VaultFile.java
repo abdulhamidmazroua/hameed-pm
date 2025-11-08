@@ -11,14 +11,16 @@ public class VaultFile {
     private String saltBase64;
     private String ivBase64;
     private String ciphertextBase64;
+    private String hashBase64;
 
     public VaultFile() {};
 
-    public VaultFile(int iterations, String saltBase64, String ivBase64, String ciphertextBase64) {
+    public VaultFile(int iterations, String saltBase64, String ivBase64, String ciphertextBase64, String hashBase64) {
         this.iterations = iterations;
         this.saltBase64 = saltBase64;
         this.ivBase64 = ivBase64;
         this.ciphertextBase64 = ciphertextBase64;
+        this.hashBase64 = hashBase64;
     }
 
     public int getIterations() {
@@ -51,5 +53,13 @@ public class VaultFile {
 
     public void setCiphertextBase64(String ciphertextBase64) {
         this.ciphertextBase64 = ciphertextBase64;
+    }
+
+    public String getHashBase64() {
+        return hashBase64;
+    }
+
+    public void setHashBase64(String hashBase64) {
+        this.hashBase64 = hashBase64;
     }
 }
