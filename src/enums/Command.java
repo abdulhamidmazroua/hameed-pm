@@ -5,6 +5,8 @@ public enum Command {
     LIST,
     GET,
     DELETE,
+    HELP,
+    CLEAR,
     EXIT;
 
     @Override

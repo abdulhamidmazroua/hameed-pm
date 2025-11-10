@@ -9,13 +9,10 @@ import model.VaultFile;
 import util.CryptoUtil;
 import util.FileStorageUtil;
 
-import javax.crypto.AEADBadTagException;
 import javax.crypto.BadPaddingException;
 import javax.crypto.SecretKey;
 import java.io.Console;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.util.*;
 
@@ -67,6 +64,8 @@ public class OrchestrationService {
                         case LIST -> listCredentials();
                         case GET -> displayCredential(commandLine[1]);
                         case DELETE -> deleteCredential(commandLine[1]);
+                        case HELP -> printUsage();
+                        case CLEAR -> clearConsole();
                         case EXIT -> System.exit(0);
                     }
                 } catch (IllegalArgumentException ex) {
@@ -92,7 +91,21 @@ public class OrchestrationService {
        authenticationService.setAuthenticatedUser(null);
    }
 
-   private void authenticateUser() throws Exception {
+    private void clearConsole() {
+        try {
+            if (System.getProperty("os.name").contains("Windows")) {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                System.out.print("\033[H\033[2J");
+                System.out.flush();
+            }
+        } catch (Exception e) {
+            System.out.println("Could not clear console.");
+        }
+    }
+
+
+    private void authenticateUser() throws Exception {
        while (!authenticationService.isAuthenticated()) {
            System.out.print("Choose login/signup: ");
            AuthType authType;
@@ -252,13 +265,13 @@ public class OrchestrationService {
        System.out.println("Credential added.");
    }
 
-   private void listCredentials() throws Exception {
+   private void listCredentials() {
        for (int i = 0; i < vault.getCredentials().size(); i++) {
            System.out.println("\u001B[31m " + (i+1) + ". \u001B[0m " + vault.getCredentials().get(i).getServiceName());
        }
    }
 
-   private void displayCredential(String serviceName) throws Exception {
+   private void displayCredential(String serviceName) {
         // Find the encrypted credentials in the file and decrypt it
         Optional<Credential> optionalCredential = vault.find(serviceName);
         Credential credential;
@@ -291,7 +304,9 @@ public class OrchestrationService {
        System.out.println("Usage - 2: list");
        System.out.println("Usage - 3: get <service-name>");
        System.out.println("Usage - 4: delete <service-name>");
-       System.out.println("Usage - 5: exit");
+       System.out.println("Usage - 5: help");
+       System.out.println("Usage - 6: clear");
+       System.out.println("Usage - 7: exit");
        System.out.println();
    }
 
