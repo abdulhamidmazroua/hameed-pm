@@ -10,6 +10,7 @@ import model.VaultFile;
 import util.ColorUtil;
 import util.CryptoUtil;
 import util.FileStorageUtil;
+import util.StringUtil;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.SecretKey;
@@ -174,7 +175,7 @@ public class OrchestrationService {
                authType = AuthType.valueOf(input.nextLine().toUpperCase());
                inputAuthentication(authType);
            } catch (IllegalArgumentException ex) {
-               System.out.println("Invalid option. Try again");
+               System.out.println(ex.getMessage());
            }
        }
    }
@@ -190,6 +191,7 @@ public class OrchestrationService {
             // username
             System.out.print("username: ");
             username = readUsernameFromConsoleOrFallback();
+            StringUtil.requireSafeName(username, "username");
 
             // password
             System.out.print("password: ");
