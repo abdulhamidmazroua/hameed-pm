@@ -13,7 +13,9 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.SecretKey;
 import java.io.Console;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class OrchestrationService {
@@ -184,8 +186,9 @@ public class OrchestrationService {
        }
 
        // load and convert from json to object
-       String vaultJson = FileStorageUtil.loadVaultFile(authenticationService.getAuthenticatedUser(), vaultChosen);
-       VaultFile vaultFile = mapper.readValue(vaultJson, VaultFile.class);
+       VaultFile vaultFile = mapper.readValue(
+               FileStorageUtil.loadVaultFile(authenticationService.getAuthenticatedUser(), vaultChosen),
+               VaultFile.class);
 
 
        // get and decode the values
@@ -214,12 +217,8 @@ public class OrchestrationService {
 
                // get the hash and check tampering
                Vault tempVault = mapper.readValue(decryptedVault, Vault.class);
-               byte[] signingKey = Base64.getDecoder().decode(tempVault.getSigningKey());
-               String generatedHash = CryptoUtil.computeHmac(signingKey, salt, iv, iterations, ciphertext);
+               integrityCheck(vaultFile.getHashBase64(), tempVault, salt, iv, iterations, ciphertext);
 
-               if (!MessageDigest.isEqual(Base64.getDecoder().decode(vaultFile.getHashBase64()), Base64.getDecoder().decode(generatedHash))) {
-                   throw new SecurityException("⚠️ Vault tampered with!");
-               }
 
                // write to the current vault field
                this.vault = tempVault;
@@ -310,6 +309,18 @@ public class OrchestrationService {
        System.out.println();
    }
 
+   private void integrityCheck(String storedHashBase64, Vault decryptedVault, byte[] salt, byte[] iv, int iterations, byte[] ciphertext) throws SecurityException, NoSuchAlgorithmException, InvalidKeyException {
+       String generatedHash = CryptoUtil.computeHmac(
+               Base64.getDecoder().decode(decryptedVault.getSigningKey()),
+               salt,
+               iv,
+               iterations,
+               ciphertext);
+
+       if (!MessageDigest.isEqual(Base64.getDecoder().decode(storedHashBase64), Base64.getDecoder().decode(generatedHash))) {
+           throw new SecurityException("⚠️ Vault tampered with!");
+       }
+   }
    private void saveVault() throws Exception {
 
        // load the vault file (includes metadata and ciphertext of vault)

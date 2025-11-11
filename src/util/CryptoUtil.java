@@ -51,7 +51,7 @@ public class CryptoUtil {
         }
     }
 
-    public static String computeHmac(byte[] signingKey, byte[] salt, byte[] iv, int iterations, byte[] ciphertext) throws Exception {
+    public static String computeHmac(byte[] signingKey, byte[] salt, byte[] iv, int iterations, byte[] ciphertext) throws NoSuchAlgorithmException, InvalidKeyException {
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(new SecretKeySpec(signingKey, "HmacSHA256"));
         mac.update(salt);
