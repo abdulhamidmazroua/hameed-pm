@@ -3,20 +3,24 @@ package service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import enums.Command;
 import enums.AuthType;
+import enums.CredentialField;
 import model.Credential;
 import model.Vault;
 import model.VaultFile;
+import util.ColorUtil;
 import util.CryptoUtil;
 import util.FileStorageUtil;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.SecretKey;
+import java.awt.*;
 import java.io.Console;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.List;
 
 public class OrchestrationService {
 
@@ -62,13 +66,68 @@ public class OrchestrationService {
                 try {
                     command = Command.valueOf(commandLine[0].toUpperCase());
                     switch (command) {
-                        case ADD -> addNewCredential();
-                        case LIST -> listCredentials();
-                        case GET -> displayCredential(commandLine[1]);
-                        case DELETE -> deleteCredential(commandLine[1]);
-                        case HELP -> printUsage();
-                        case CLEAR -> clearConsole();
-                        case EXIT -> System.exit(0);
+                        case ADD -> {
+                            if (commandLine.length > 1) {
+                                System.out.println("Too many arguments");
+                                System.out.println(ColorUtil.bold("Usage: ") + command.usage());
+                            } else {
+                                addNewCredential();
+                            }
+                        }
+                        case LIST -> {
+                            if (commandLine.length > 1) {
+                                System.out.println("Too many arguments");
+                                System.out.println(ColorUtil.bold("Usage: ") + command.usage());
+                            } else {
+                                listCredentials();
+                            }
+                        }
+                        case GET -> {
+                            if (commandLine.length > 2) {
+                                System.out.println("Too many arguments");
+                                System.out.println(ColorUtil.bold("Usage: ") + command.usage());
+                            } else {
+                                displayCredential(commandLine[1]);
+                            }
+                        }
+                        case UPDATE -> {
+                            if (commandLine.length > 4) {
+                                System.out.println("Too many arguments");
+                                System.out.println(ColorUtil.bold("Usage: ") + command.usage());
+                            } else {
+                                updateCredential(commandLine[1], commandLine[2], commandLine[3]);
+                            }
+                        }
+                        case DELETE -> {
+                            if (commandLine.length > 2) {
+                                System.out.println("Too many arguments");
+                                System.out.println(ColorUtil.bold("Usage: ") + command.usage());
+                            } else {
+                                deleteCredential(commandLine[1]);
+                            }
+                        }
+                        case HELP -> {
+                            if (commandLine.length > 1) {
+                                System.out.println("Too many arguments");
+                                System.out.println(ColorUtil.bold("Usage: ") + command.usage());
+                            } else {
+                                printUsage();
+                            }
+                        }
+                        case CLEAR -> {
+                            if (commandLine.length > 1) {
+                                System.out.println("Too many arguments");
+                                System.out.println(ColorUtil.bold("Usage: ") + command.usage());
+                            }
+                            clearConsole();
+                        }
+                        case EXIT -> {
+                            if (commandLine.length > 1) {
+                                System.out.println("Too many arguments");
+                                System.out.println(ColorUtil.bold("Usage: ") + command.usage());
+                            }
+                            System.exit(0);
+                        }
                     }
                 } catch (IllegalArgumentException ex) {
                     System.out.println("Invalid command.");
@@ -179,7 +238,7 @@ public class OrchestrationService {
            System.out.print(">> ");
            vaultChosen = input.nextLine();
            if (!userVaultNames.contains(vaultChosen)) {
-               System.err.println("There is no vault with this name: " + vaultChosen);
+               System.err.println(ColorUtil.magenta("There is no vault with this name: " + vaultChosen));
            } else {
                break;
            }
@@ -224,12 +283,12 @@ public class OrchestrationService {
                this.vault = tempVault;
                isValidKey = true;
                System.out.println();
-               System.out.println("✅ Vault opening was successful!");
+               System.out.println(ColorUtil.green("Vault opening was successful!"));
                System.out.println("use the following commands: ");
                printUsage();
 
            } catch (BadPaddingException ex) {
-               System.out.println("Invalid Password.");
+               System.out.println(ColorUtil.red("Invalid Password."));
                attempts++;
            } catch (SecurityException ex) {
                System.err.println(ex.getMessage());
@@ -244,11 +303,11 @@ public class OrchestrationService {
 }
 
    private void addNewCredential() throws Exception {
-       System.out.print("Service Name: ");
+       System.out.print(ColorUtil.boldRed("service-name: "));
        String serviceName = input.nextLine();
-       System.out.print("username: ");
+       System.out.print(ColorUtil.boldRed("username: "));
        String username = input.nextLine();
-       System.out.print("password: ");
+       System.out.print(ColorUtil.boldRed("password: "));
        String password = input.nextLine();
 
        // create credential
@@ -261,7 +320,7 @@ public class OrchestrationService {
        vault.add(credential);
        saveVault();
 
-       System.out.println("Credential added.");
+       System.out.println(ColorUtil.green("Credential Added Successfully"));
    }
 
    private void listCredentials() {
@@ -277,21 +336,43 @@ public class OrchestrationService {
         if (optionalCredential.isPresent()) {
             credential = optionalCredential.get();
 
-            System.out.println("service name: " + credential.getServiceName());
-            System.out.println("username: " + credential.getUsername());
-            System.out.println("password: " + credential.getPassword());
+            System.out.println(ColorUtil.boldRed("service-name: ") + credential.getServiceName());
+            System.out.println(ColorUtil.boldRed("username: ") + credential.getUsername());
+            System.out.println(ColorUtil.boldRed("password: ") + credential.getPassword());
         } else {
             System.out.println("Could not find any credentials in this vault with this name: " + serviceName);
         }
 
    }
 
+   private void updateCredential(String serviceName, String fieldName, String fieldValue) throws Exception {
+        Optional<CredentialField> optionalCredentialField = CredentialField.fromValue(fieldName);
+        if (optionalCredentialField.isEmpty()) {
+            throw new IllegalArgumentException("The field name entered is not valid: " + fieldName);
+        }
+
+        CredentialField credentialField = optionalCredentialField.get();
+        Optional<Credential> optionalCredential = vault.find(serviceName);
+        if (optionalCredential.isEmpty()) {
+           throw new IllegalArgumentException("The service name entered was not found: " + serviceName);
+        }
+
+        switch (credentialField) {
+            case SERVICE_NAME -> optionalCredential.get().setServiceName(fieldValue);
+            case USERNAME -> optionalCredential.get().setUsername(fieldValue);
+            case PASSWORD -> optionalCredential.get().setPassword(fieldValue);
+        }
+
+        // save
+       saveVault();
+       System.out.println(ColorUtil.yellow("Credential Updated Successfully"));
+   }
 
    private void deleteCredential(String serviceName) throws Exception {
 
        if (vault.remove(serviceName)) {
            saveVault();
-           System.out.println("Removed successfully");
+           System.out.println(ColorUtil.yellow("Credential Removed Successfully"));
 
        }
        else System.out.println("Credential for this service was not found");
@@ -299,14 +380,11 @@ public class OrchestrationService {
    }
 
    private void printUsage() {
-       System.out.println("Usage - 1: add");
-       System.out.println("Usage - 2: list");
-       System.out.println("Usage - 3: get <service-name>");
-       System.out.println("Usage - 4: delete <service-name>");
-       System.out.println("Usage - 5: help");
-       System.out.println("Usage - 6: clear");
-       System.out.println("Usage - 7: exit");
-       System.out.println();
+        Command[] commands = Command.values();
+        for (int i = 0; i < commands.length; i++) {
+            System.out.print(ColorUtil.bold("Usage - " + (i + 1) + ": "));
+            System.out.println(commands[i].usage());
+        }
    }
 
    private void integrityCheck(String storedHashBase64, Vault decryptedVault, byte[] salt, byte[] iv, int iterations, byte[] ciphertext) throws SecurityException, NoSuchAlgorithmException, InvalidKeyException {
@@ -321,6 +399,7 @@ public class OrchestrationService {
            throw new SecurityException("⚠️ Vault tampered with!");
        }
    }
+
    private void saveVault() throws Exception {
 
        // load the vault file (includes metadata and ciphertext of vault)
@@ -328,22 +407,21 @@ public class OrchestrationService {
        VaultFile vaultFile = mapper.readValue(vaultFileJson, VaultFile.class);
 
        // encrypt the new vault with a new iv
-       byte[] newIV = CryptoUtil.generateRandomBytes(12);
        String updatedVaultJson = mapper.writerWithDefaultPrettyPrinter()
                .writeValueAsString(vault);
-       byte[] updatedEncryptedJson = CryptoUtil.encrypt(vaultKey, updatedVaultJson.getBytes(), newIV);
+       byte[] newIV = CryptoUtil.generateRandomBytes(12);
+       byte[] newCipherText = CryptoUtil.encrypt(vaultKey, updatedVaultJson.getBytes(), newIV);
 
-       // replace vault file fields with the new iv and the new ciphertext
-       vaultFile.setIvBase64(new String(Base64.getEncoder().encode(newIV), StandardCharsets.UTF_8));
-       vaultFile.setCiphertextBase64(new String(Base64.getEncoder().encode(updatedEncryptedJson), StandardCharsets.UTF_8));
-
-       // add the new hash to avoid tampering
+        // update with the new hash to avoid tampering
        vaultFile.setHashBase64(CryptoUtil.computeHmac(
                Base64.getDecoder().decode(vault.getSigningKey()),
                Base64.getDecoder().decode(vaultFile.getSaltBase64()),
-               Base64.getDecoder().decode(vaultFile.getIvBase64()),
+               newIV,
                vaultFile.getIterations(),
-               updatedEncryptedJson));
+               newCipherText));
+       // update vault file fields with the new iv and the new ciphertext
+       vaultFile.setIvBase64(new String(Base64.getEncoder().encode(newIV), StandardCharsets.UTF_8));
+       vaultFile.setCiphertextBase64(new String(Base64.getEncoder().encode(newCipherText), StandardCharsets.UTF_8));
 
        // save the updated vault file
        String vaultJson = mapper.writerWithDefaultPrettyPrinter()

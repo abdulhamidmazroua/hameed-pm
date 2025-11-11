@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import model.AuthFile;
 import model.EncodedAuth;
 import model.VaultFile;
+import util.ColorUtil;
 import util.CryptoUtil;
 import util.FileStorageUtil;
 
@@ -80,11 +81,11 @@ public class AuthenticationService {
         Arrays.fill(storedHash, (byte) 0);
 
         if (!match) {
-            System.out.println("Incorrect username or password. Try again.");
+            System.out.println(ColorUtil.red("Incorrect username or password. Try again."));
             return;
         }
 
-        System.out.println("✅ Sign-in successful!");
+        System.out.println(ColorUtil.green("Sign-in successful!"));
 
         // authenticate
         setAuthenticated(true);
