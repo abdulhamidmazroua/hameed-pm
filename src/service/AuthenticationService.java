@@ -7,6 +7,7 @@ import model.VaultFile;
 import util.ColorUtil;
 import util.CryptoUtil;
 import util.FileStorageUtil;
+import util.StringUtil;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -94,23 +95,20 @@ public class AuthenticationService {
 
     public void signup(String username, char[] password) throws Exception {
         // validate input
-        if (!isValidCredentials(username, password)) {
-            // throw some exception and find a way to get the validation errors
-        };
+        StringUtil.requireSafeName(username, "username");
+        StringUtil.requireValidPassword(password);
 
-        // validate username
+        // validate username exists
         if(usernameExists(username)) {
             System.out.println("This username already exists");
             return;
         }
-
 
         // create a new user
         createUser(username, password);
 
         // create a default encrypted vault
         createEncryptedVault(username, password);
-
 
         System.out.println("✅ Signup was successful!");
 
@@ -153,11 +151,6 @@ public class AuthenticationService {
 
         // null is passed as a vaultName to use the default
         FileStorageUtil.saveVaultFile(vaultJson, username, FileStorageUtil.DEFAULT_VAULT_NAME);
-    }
-
-    public boolean isValidCredentials(String username, char[] password) {
-        // TODO: apply some input validations against the password and username
-        return true;
     }
 
     public boolean usernameExists(String username) throws Exception{
