@@ -7,4 +7,4 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public record AuthFile(@JsonProperty("auth_list") List<EncodedAuth> authList) {}
+public record AuthFile(List<EncodedAuth> authList) {}
