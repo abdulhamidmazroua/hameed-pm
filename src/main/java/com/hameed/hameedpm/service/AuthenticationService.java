@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hameed.hameedpm.model.AuthFile;
 import com.hameed.hameedpm.model.EncodedAuth;
 import com.hameed.hameedpm.model.VaultFile;
+import com.hameed.hameedpm.service.impl.IAuthenticationService;
 import com.hameed.hameedpm.util.ColorUtil;
 import com.hameed.hameedpm.util.CryptoUtil;
 import com.hameed.hameedpm.util.FileStorageUtil;
 import com.hameed.hameedpm.util.StringUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -18,36 +21,27 @@ import java.util.Optional;
 
 import java.security.MessageDigest;
 
-public class AuthenticationService {
+@Service
+public class AuthenticationService implements IAuthenticationService {
 
 
-    private boolean authenticated = false;
+    private boolean authenticated;
     private String authenticatedUser;
     private final ObjectMapper mapper;
 
-
-    public AuthenticationService(ObjectMapper mapper) {
-        this.mapper = mapper;
-        authenticated = false;
-        authenticatedUser = null;
+    public AuthenticationService() {
+        this.mapper = new ObjectMapper();
+        mapper.findAndRegisterModules();
     }
 
+    @Override
     public boolean isAuthenticated() {
         return authenticated;
-    }
-
-    public void setAuthenticated(boolean authenticated) {
-        this.authenticated = authenticated;
     }
 
     public String getAuthenticatedUser() {
         return authenticatedUser;
     }
-
-    public void setAuthenticatedUser(String authenticatedUser) {
-        this.authenticatedUser = authenticatedUser;
-    }
-
 
     public void login(String username, char[] password) throws Exception {
 
@@ -89,8 +83,8 @@ public class AuthenticationService {
         System.out.println(ColorUtil.green("Sign-in successful!"));
 
         // authenticate
-        setAuthenticated(true);
-        setAuthenticatedUser(username);
+        this.authenticated = true;
+        this.authenticatedUser = username;
     }
 
     public void signup(String username, char[] password) throws Exception {
@@ -113,8 +107,8 @@ public class AuthenticationService {
         System.out.println("✅ Signup was successful!");
 
         // authenticate
-        setAuthenticatedUser(username);
-        setAuthenticated(true);
+        this.authenticated = true;
+        this.authenticatedUser = username;
 
     }
 

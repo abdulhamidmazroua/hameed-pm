@@ -20,16 +20,17 @@ public class HameedPM {
                 AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW));
     }
 
-    @Bean
-    public Command sayHelloProgrammatically() {
-        return Command.builder()
-                .name("hello-prog")
-                .group("Greetings")
-                .description("Say hello without a name but from a defined command bean")
-                .execute(commandContext -> {
-                    commandContext.outputWriter().println("Hello Programmatically");
-                });
-    }
+//    @Bean
+//    public Command sayHelloProgrammatically() {
+//        return Command.builder()
+//                .name("hello-prog")
+//                .group("Greetings")
+//                .description("Say hello without a name but from a defined command bean")
+//                .execute(commandContext -> {
+//                    commandContext.outputWriter().println("Hello Programmatically");
+//                });
+//    }
+
 
 
 

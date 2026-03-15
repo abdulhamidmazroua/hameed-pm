@@ -4,12 +4,15 @@ package com.hameed.hameedpm.model;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
+import java.util.Map;
+
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class Credential {
 
     private String serviceName;
     private String username;
     private String password;
+    private Map<String, String> additionalInfo;
 
     public String getServiceName() {
         return serviceName;
@@ -35,4 +38,11 @@ public class Credential {
         this.password = password;
     }
 
+    public Map<String, String> getAdditionalInfo() {
+        return additionalInfo;
+    }
+
+    public void setAdditionalInfo(Map<String, String> additionalInfo) {
+        this.additionalInfo = additionalInfo;
+    }
 }
