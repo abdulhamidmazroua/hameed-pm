@@ -1,4 +1,4 @@
-package util;
+package com.hameed.hameedpm.util;
 
 import java.io.IOException;
 import java.nio.file.Files;

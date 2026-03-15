@@ -1,4 +1,4 @@
-package util;
+package com.hameed.hameedpm.util;
 
 public class ColorUtil {
     // Reset

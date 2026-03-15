@@ -1,0 +1,7 @@
+spring:
+  main:
+    log-startup-info: false
+logging:
+  level:
+    root: WARN
+    org.springframework: WARN

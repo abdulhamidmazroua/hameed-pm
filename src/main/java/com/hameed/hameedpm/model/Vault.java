@@ -1,10 +1,8 @@
-package model;
+package com.hameed.hameedpm.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
-import javax.crypto.SecretKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

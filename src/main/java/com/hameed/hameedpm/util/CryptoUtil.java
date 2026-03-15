@@ -1,4 +1,4 @@
-package util;
+package com.hameed.hameedpm.util;
 
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;

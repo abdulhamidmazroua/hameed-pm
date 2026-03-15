@@ -1,6 +1,6 @@
-package enums;
+package com.hameed.hameedpm.enums;
 
-import util.ColorUtil;
+import com.hameed.hameedpm.util.ColorUtil;
 
 public enum Command {
     ADD,

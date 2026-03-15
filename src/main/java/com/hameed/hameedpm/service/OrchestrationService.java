@@ -1,20 +1,19 @@
-package service;
+package com.hameed.hameedpm.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import enums.Command;
-import enums.AuthType;
-import enums.CredentialField;
-import model.Credential;
-import model.Vault;
-import model.VaultFile;
-import util.ColorUtil;
-import util.CryptoUtil;
-import util.FileStorageUtil;
-import util.StringUtil;
+import com.hameed.hameedpm.enums.Command;
+import com.hameed.hameedpm.enums.AuthType;
+import com.hameed.hameedpm.enums.CredentialField;
+import com.hameed.hameedpm.model.Credential;
+import com.hameed.hameedpm.model.Vault;
+import com.hameed.hameedpm.model.VaultFile;
+import com.hameed.hameedpm.util.ColorUtil;
+import com.hameed.hameedpm.util.CryptoUtil;
+import com.hameed.hameedpm.util.FileStorageUtil;
+import com.hameed.hameedpm.util.StringUtil;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.SecretKey;
-import java.awt.*;
 import java.io.Console;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -356,7 +355,7 @@ public class OrchestrationService {
         CredentialField credentialField = optionalCredentialField.get();
         Optional<Credential> optionalCredential = vault.find(serviceName);
         if (optionalCredential.isEmpty()) {
-           throw new IllegalArgumentException("The service name entered was not found: " + serviceName);
+           throw new IllegalArgumentException("The com.hameed.hameedpm.service name entered was not found: " + serviceName);
         }
 
         switch (credentialField) {
@@ -377,7 +376,7 @@ public class OrchestrationService {
            System.out.println(ColorUtil.yellow("Credential Removed Successfully"));
 
        }
-       else System.out.println("Credential for this service was not found");
+       else System.out.println("Credential for this com.hameed.hameedpm.service was not found");
 
    }
 

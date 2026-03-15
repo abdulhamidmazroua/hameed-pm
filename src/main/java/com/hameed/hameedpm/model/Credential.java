@@ -1,4 +1,4 @@
-package model;
+package com.hameed.hameedpm.model;
 
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;

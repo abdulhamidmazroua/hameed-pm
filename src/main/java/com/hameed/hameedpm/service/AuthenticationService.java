@@ -1,13 +1,13 @@
-package service;
+package com.hameed.hameedpm.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import model.AuthFile;
-import model.EncodedAuth;
-import model.VaultFile;
-import util.ColorUtil;
-import util.CryptoUtil;
-import util.FileStorageUtil;
-import util.StringUtil;
+import com.hameed.hameedpm.model.AuthFile;
+import com.hameed.hameedpm.model.EncodedAuth;
+import com.hameed.hameedpm.model.VaultFile;
+import com.hameed.hameedpm.util.ColorUtil;
+import com.hameed.hameedpm.util.CryptoUtil;
+import com.hameed.hameedpm.util.FileStorageUtil;
+import com.hameed.hameedpm.util.StringUtil;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -173,7 +173,7 @@ public class AuthenticationService {
         byte[] salt = CryptoUtil.generateRandomBytes(16);
         byte[] passwordHash = CryptoUtil.deriveHash(password, salt, iterations);
 
-        // create model.EncodedAuth object and add it to list
+        // create com.hameed.hameedpm.model.EncodedAuth object and add it to list
         EncodedAuth encodedAuth = new EncodedAuth(
                 username,
                 iterations,

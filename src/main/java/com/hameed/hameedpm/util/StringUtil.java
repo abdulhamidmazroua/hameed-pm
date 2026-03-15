@@ -1,6 +1,5 @@
-package util;
+package com.hameed.hameedpm.util;
 
-import java.util.Arrays;
 import java.util.regex.Pattern;
 
 public class StringUtil {

@@ -1,10 +1,13 @@
-package model;
+package com.hameed.hameedpm.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
-import java.util.List;
-
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public record AuthFile(List<EncodedAuth> authList) {}
+public record EncodedAuth(
+        String username,
+        int iterations,
+        String saltBase64,
+        String hashBase64
+) {};
