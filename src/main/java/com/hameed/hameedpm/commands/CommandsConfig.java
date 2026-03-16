@@ -352,6 +352,39 @@ public class CommandsConfig {
 
 
     @Bean
+    public Command deleteCredentialCommand() {
+        return Command.builder()
+                .name("delete")
+                .description("delete a credential")
+                .help("A command to delete a credential. Usage: delete [-s | --service-name] <service-name>")
+                .options(CommandOption.with()
+                        .longName("service-name")
+                        .shortName('s')
+                        .description("The service name")
+                        .required(true)
+                        .type(String.class)
+                        .build())
+                .exitStatusExceptionMapper(exceptionMapper())
+//                .availabilityProvider(availabilityProvider())
+                .execute(ctx -> {
+                    CommandOption serviceNameOption = ctx.getOptionByShortName('s');
+                    if (serviceNameOption == null || serviceNameOption.value() == null || serviceNameOption.value().isBlank()) {
+                        throw new IllegalArgumentException("service-name is missing \nUsage: delete [-s | --service-name] <service-name>");
+                    }
+                    String serviceName = serviceNameOption.value();
+                    if(credentialService.deleteCredential(serviceName)) {
+                        ctx.outputWriter().println("Credential for '" + serviceName + "' deleted successfully.");
+                    } else {
+                        ctx.outputWriter().println("Failed to delete the credential for '" + serviceName + "'. It may not exist.");
+                    }
+                });
+
+
+    }
+
+
+
+    @Bean
     public Command testCommand() {
         return Command.builder()
                 .name("test")

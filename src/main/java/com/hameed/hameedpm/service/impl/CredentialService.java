@@ -32,4 +32,9 @@ public class CredentialService implements ICredentialService {
     public boolean updateCredential(String serviceName, Credential updatedCredential) {
         return false;
     }
+
+    @Override
+    public boolean deleteCredential(String serviceName) {
+        return false;
+    }
 }

@@ -11,5 +11,6 @@ public interface ICredentialService {
     List<Credential> listCredentials();
     Optional<Credential> getCredentialByServiceName(String service);
     boolean updateCredential(String serviceName, Credential updatedCredential);
+    boolean deleteCredential(String serviceName);
 
 }
