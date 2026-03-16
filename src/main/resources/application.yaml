@@ -2,7 +2,10 @@ spring:
   shell:
     interactive:
       enabled: true
-  main:
-    banner-mode: off
+    command:
+      script:
+        enabled: true
   profiles:
     active: prod
+  main:
+    banner-mode: off

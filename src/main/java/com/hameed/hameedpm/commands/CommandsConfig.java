@@ -1,5 +1,6 @@
 package com.hameed.hameedpm.commands;
 
+import com.hameed.hameedpm.exception.ResourceNotFoundException;
 import com.hameed.hameedpm.model.Credential;
 import com.hameed.hameedpm.service.ICredentialService;
 import com.hameed.hameedpm.service.impl.IAuthenticationService;
@@ -13,12 +14,15 @@ import org.springframework.shell.core.command.ExitStatus;
 import org.springframework.shell.core.command.availability.Availability;
 import org.springframework.shell.core.command.availability.AvailabilityProvider;
 import org.springframework.shell.core.command.exit.ExitStatusExceptionMapper;
+import org.springframework.shell.jline.tui.component.SingleItemSelector;
 import org.springframework.shell.jline.tui.component.flow.ComponentFlow;
+import org.springframework.shell.jline.tui.component.flow.SelectItem;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 
 @Configuration
 public class CommandsConfig {
@@ -48,7 +52,7 @@ public class CommandsConfig {
                         .type(String.class)
                         .build())
                 .exitStatusExceptionMapper(exceptionMapper())
-                .availabilityProvider(availabilityProvider())
+//                .availabilityProvider(availabilityProvider())
                 .execute(ctx -> {
                     CommandOption serviceNameOption = ctx.getOptionByShortName('s');
                     if (serviceNameOption == null || serviceNameOption.value() == null || serviceNameOption.value().isBlank()) {
@@ -129,10 +133,14 @@ public class CommandsConfig {
                         .required(false)
                         .type(boolean.class)
                         .build())
-                .availabilityProvider(availabilityProvider())
+//                .availabilityProvider(availabilityProvider())
                 .exitStatusExceptionMapper(exceptionMapper())
                 .execute(ctx -> {
-                    if (ctx.getOptionByShortName('d').value() != null && Boolean.parseBoolean(ctx.getOptionByShortName('d').value()))
+                    CommandOption detailedOption = ctx.getOptionByShortName('d');
+                    boolean detailed = detailedOption != null &&
+                            detailedOption.value() != null &&
+                            Boolean.parseBoolean(detailedOption.value());
+                    if (detailed)
                         credentialService.listCredentials()
                                 .forEach(cred -> {
                                     printCredential(ctx, cred);
@@ -158,41 +166,244 @@ public class CommandsConfig {
                         .required(true)
                         .build())
                 .exitStatusExceptionMapper(exceptionMapper())
-                .availabilityProvider(availabilityProvider())
+//                .availabilityProvider(availabilityProvider())
                 .execute(ctx -> {
                     CommandOption serviceNameOption = ctx.getOptionByShortName('s');
                     if (serviceNameOption == null || serviceNameOption.value() == null || serviceNameOption.value().isBlank()) {
                         throw new IllegalArgumentException("service-name is missing \nUsage: get [-s | --service-name] <service-name>");
                     }
                     String serviceName = serviceNameOption.value();
-                    Credential cred = credentialService.getCredentialByServiceName(serviceName);
-                    if (cred == null) {
-                        ctx.outputWriter().println("No credential for this service name: " + serviceName);
-                        return;
-                    }
+                    Credential cred = credentialService.getCredentialByServiceName(serviceName).orElseThrow(() -> new ResourceNotFoundException("Credential with this service name was not found: " + serviceName));
                     printCredential(ctx, cred);
                 });
     }
 
-//    @Bean
-//    public Command updateCredentialCommand() {
-//        return Command.builder()
-//                .name("update")
-//                .description("update specific credential details")
-//                .help("A command to update credential details. Usage: update")
-//                .options(CommandOption.with()
-//                        .required(true)
-//                        .build());
-//
-//    }
+    @Bean
+    public Command updateCredentialCommand() {
+        return Command.builder()
+                .name("update")
+                .description("update specific credential details")
+                .help("A command to update credential details. Usage: update [-s | --service-name] <service-name>")
+                .options(CommandOption.with()
+                        .longName("service-name")
+                        .shortName('s')
+                        .description("The service name")
+                        .required(true)
+                        .type(String.class)
+                        .build())
+                .exitStatusExceptionMapper(exceptionMapper())
+//                .availabilityProvider(availabilityProvider())
+                .execute(ctx -> {
+                    CommandOption serviceNameOption = ctx.getOptionByShortName('s');
+                    if (serviceNameOption == null || serviceNameOption.value() == null || serviceNameOption.value().isBlank()) {
+                        throw new IllegalArgumentException("service-name is missing \nUsage: add [-s | --service-name] <service-name>");
+                    }
+
+                    String serviceName = serviceNameOption.value();
+
+                    Credential cred = credentialService.getCredentialByServiceName(serviceName).orElseThrow(() -> new ResourceNotFoundException("Credential with this service name was not found: " + serviceName));
+                    // clone using the copy constructor
+                    Credential updatedCred = new Credential(cred);
+                    printCredential(ctx, cred);
+                    boolean keepUpdating = true;
+
+                    while (keepUpdating) {
+                        ComponentFlow.ComponentFlowResult updateFieldSelectorResult = componentFlowBuilder.clone()
+                                .reset()
+                                .withSingleItemSelector("updateFieldSelector")
+                                .name("Choose what you want to update:")
+                                .selectItems(List.of(
+                                        SelectItem.of("Username / Email: ", "username"),
+                                        SelectItem.of("Password", "password"),
+                                        SelectItem.of("Additional Info", "additionalInfo")
+                                )).and().build().run();
+
+                        String fieldToUpdate = updateFieldSelectorResult.getContext().get("updateFieldSelector", String.class);
+
+                        switch (fieldToUpdate) {
+                            case "username" -> {
+                                ComponentFlow.ComponentFlowResult userUpdateResult = componentFlowBuilder.clone().reset()
+                                        .withStringInput("username")
+                                        .name("Updated Username / Email: ")
+                                        .defaultValue("")
+                                        .required()
+                                        .and().build().run();
+
+                                String updatedUsername = userUpdateResult.getContext().get("username", String.class);
+//                                if (updatedUsername.isBlank()) throw new IllegalArgumentException("the updated username cannot be empty");
+                                if (updatedUsername.isBlank()) {
+                                    ctx.outputWriter().println("Error: the updated username cannot be empty");
+                                    continue;
+                                }
+                                updatedCred.setUsername(updatedUsername);
+                            }
+                            case "password" -> {
+                                ComponentFlow.ComponentFlowResult passwordUpdateResult = componentFlowBuilder.clone().reset()
+                                        .withStringInput("password")
+                                        .name("Updated Password: ")
+                                        .defaultValue("")
+                                        .maskCharacter('*')
+                                        .required()
+                                        .and().build().run();
+
+                                String updatePassword = passwordUpdateResult.getContext().get("password", String.class);
+//                                if (updatePassword.isBlank()) throw new IllegalArgumentException("the updated password cannot be empty");
+                                if (updatePassword.isBlank()) {
+                                    ctx.outputWriter().println("Error: the updated password cannot be empty");
+                                    continue;
+                                }
+                                updatedCred.setPassword(updatePassword);
+                            }
+                            case "additionalInfo" -> {
+                                ComponentFlow.ComponentFlowResult additionalInfoSelectorResult;
+                                if (updatedCred.getAdditionalInfo().isEmpty()) {
+                                    additionalInfoSelectorResult = componentFlowBuilder.clone().reset()
+                                            .withSingleItemSelector("additionalInfoActionSelector")
+                                            .name("Choose what action you want to do")
+                                            .selectItems(List.of(
+                                                    SelectItem.of("Add New Info", "addInfo")
+                                            )).and().build().run();
+                                } else {
+                                    // get a list of items of the additional infofirst
+                                    List<SelectItem> infoItems = updatedCred.getAdditionalInfo().keySet().stream()
+                                            .map(key -> SelectItem.of(key, key))
+                                            .toList();
+                                    additionalInfoSelectorResult = componentFlowBuilder.clone().reset()
+                                            .withSingleItemSelector("additionalInfoActionSelector")
+                                            .name("Choose what action you want to do")
+                                            .selectItems(List.of(
+                                                    SelectItem.of("Add New Info", "addInfo"),
+                                                    SelectItem.of("Update Info", "updateInfo"),
+                                                    SelectItem.of("Remove Info", "removeInfo")
+                                            )).next(selectorContext -> selectorContext.getResultItem().get().getItem().equals("addInfo") ? null : "additionalInfoFieldSelector")
+                                            .and()
+                                            .withSingleItemSelector("additionalInfoFieldSelector")
+                                            .name("Choose the field")
+                                            .selectItems(infoItems)
+                                            .and().build().run();
+                                }
+
+                                String additionalInfoAction = additionalInfoSelectorResult.getContext().get("additionalInfoActionSelector", String.class);
+                                switch (additionalInfoAction) {
+                                    case "addInfo" -> {
+                                        boolean hasMoreInfo = true;
+                                        while (hasMoreInfo) {
+                                            ComponentFlow.ComponentFlowResult extraResult = componentFlowBuilder.clone()
+                                                    .reset()
+                                                    .withStringInput("key")
+                                                    .name("Key")
+                                                    .required()
+                                                    .and()
+                                                    .withStringInput("value")
+                                                    .name("Value")
+                                                    .required()
+                                                    .and()
+                                                    .withConfirmationInput("addAnother")
+                                                    .name("Add another entry?")
+                                                    .and()
+                                                    .build()
+                                                    .run();
+
+                                            String key = extraResult.getContext().get("key", String.class);
+                                            String value = extraResult.getContext().get("value", String.class);
+                                            updatedCred.addInfo(key, value);
+                                            hasMoreInfo = extraResult.getContext().get("addAnother", Boolean.class);
+                                        }
+                                    }
+                                    case "updateInfo" -> {
+                                        // update info
+                                        String keyToUpdate = additionalInfoSelectorResult.getContext().get("additionalInfoFieldSelector", String.class);
+                                        ComponentFlow.ComponentFlowResult updateInfoResult = componentFlowBuilder.clone().reset()
+                                                .withStringInput("newValue")
+                                                .name("New value for " + keyToUpdate)
+                                                .required()
+                                                .and().build().run();
+
+                                        String newValue = updateInfoResult.getContext().get("newValue", String.class);
+                                        updatedCred.updateInfo(keyToUpdate, newValue);
+                                    }
+                                    case "removeInfo" -> {
+                                        // remove info
+                                        String keyToRemove = additionalInfoSelectorResult.getContext().get("additionalInfoFieldSelector", String.class);
+                                        updatedCred.removeInfo(keyToRemove);
+                                    }
+                                    default -> {
+                                        // should not reach here
+                                    }
+                                }
+                            }
+                        }
+
+                        // keep updating ?
+                        ComponentFlow.ComponentFlowResult keepUpdatingResult = componentFlowBuilder.clone().reset()
+                                .withConfirmationInput("keepUpdating")
+                                .name("Do you want to keep updating this credential?")
+                                .and().build().run();
+                        keepUpdating = keepUpdatingResult.getContext().get("keepUpdating", Boolean.class);
+                    }
+
+                    if(credentialService.updateCredential(serviceName, updatedCred)) {
+                        ctx.outputWriter().println("Credential for '" + serviceName + "' updated successfully.");
+                    } else {
+                        ctx.outputWriter().println("Failed to update the credential for '" + serviceName + "'.");
+                    }
+                });
+    }
+
+
+    @Bean
+    public Command testCommand() {
+        return Command.builder()
+                .name("test")
+                .execute(ctx -> {
+                    ComponentFlow.ComponentFlowResult actionResult = componentFlowBuilder.clone().reset()
+                            .withSingleItemSelector("action")
+                            .name("What do you want to do")
+                            .selectItems(List.of(
+                                    SelectItem.of("Update credential", "update"),
+                                    SelectItem.of("Remove credential", "delete")
+                            )).and().build().run();
+
+                    String action = actionResult.getContext().get("action", String.class);
+
+                    switch (action) {
+                        case "update" -> {
+                            ComponentFlow.ComponentFlowResult updateResult = componentFlowBuilder.clone().reset()
+                                    .withStringInput("update")
+                                    .name("username: ")
+                                    .and()
+                                    .build().run();
+                            String serviceToUpdate = updateResult.getContext().get("update", String.class);
+                            if (!serviceToUpdate.isBlank())
+                                ctx.outputWriter().println("update required for this service: " + serviceToUpdate);
+                        }
+                        case "delete" -> {
+                            ComponentFlow.ComponentFlowResult deleteResult = componentFlowBuilder.clone().reset()
+                                    .withStringInput("delete")
+                                    .name("which service you want to delete: ")
+                                    .defaultValue("")
+                                    .and()
+                                    .build().run();
+
+                            String serviceToDelete = deleteResult.getContext().get("delete", String.class);
+                            if(!serviceToDelete.isBlank())
+                                ctx.outputWriter().println("delete required for this service: " + serviceToDelete);
+                        }
+                    }
+
+                });
+
+    }
 
     @Bean
     public ExitStatusExceptionMapper exceptionMapper() {
         return exception -> {
             if (exception instanceof IllegalArgumentException)
-                return new ExitStatus(1, "Error with exit code: \n" + exception.getMessage());
+                return new ExitStatus(1, exception.getMessage());
+            else if (exception instanceof ResourceNotFoundException)
+                return new ExitStatus(2, exception.getMessage());
             else
-                return new ExitStatus(99, "Internal Error, unexpected: \n" + exception.getMessage());
+                return new ExitStatus(99,exception.getMessage());
         };
     }
 
@@ -204,6 +415,6 @@ public class CommandsConfig {
 
     private void printCredential(CommandContext ctx, Credential cred) {
         ctx.outputWriter().printf(" username: %s%n password: %s%n", cred.getUsername(), cred.getPassword());
-        cred.getAdditionalInfo().forEach((key, value) -> ctx.outputWriter().printf(" %s: %s%n %s: %s%n", key, value));
+        cred.getAdditionalInfo().forEach((key, value) -> ctx.outputWriter().printf(" %s: %s%n", key, value));
     }
 }

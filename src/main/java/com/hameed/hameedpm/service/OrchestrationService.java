@@ -148,8 +148,8 @@ public class OrchestrationService {
        if (vault != null && vault.getCredentials() != null)
            vault.getCredentials().clear();
 
-       authenticationService.setAuthenticated(false);
-       authenticationService.setAuthenticatedUser(null);
+//       authenticationService.setAuthenticated(false);
+//       authenticationService.setAuthenticatedUser(null);
    }
 
     private void clearConsole() {

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class CredentialService implements ICredentialService {
@@ -23,7 +24,12 @@ public class CredentialService implements ICredentialService {
     }
 
     @Override
-    public Credential getCredentialByServiceName(String service) {
-        return null;
+    public Optional<Credential> getCredentialByServiceName(String service) {
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean updateCredential(String serviceName, Credential updatedCredential) {
+        return false;
     }
 }
