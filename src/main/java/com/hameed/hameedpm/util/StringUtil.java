@@ -13,6 +13,9 @@ public class StringUtil {
     }
 
     public static void requireValidPassword(char[] password) {
+        if (password == null) {
+            throw new IllegalArgumentException("Password cannot be null");
+        }
         String pwd = new String(password);
         if (!(pwd.length() >= 12 &&                      // min length
             pwd.matches(".*[A-Z].*") &&               // at least one uppercase

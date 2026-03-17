@@ -1,5 +1,7 @@
 package com.hameed.hameedpm;
 
+import com.hameed.hameedpm.service.IVaultService;
+import org.jline.reader.UserInterruptException;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 import org.springframework.boot.SpringApplication;
@@ -19,19 +21,5 @@ public class HameedPM {
         return () -> new AttributedString("hameed-pm:>",
                 AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW));
     }
-
-//    @Bean
-//    public Command sayHelloProgrammatically() {
-//        return Command.builder()
-//                .name("hello-prog")
-//                .group("Greetings")
-//                .description("Say hello without a name but from a defined command bean")
-//                .execute(commandContext -> {
-//                    commandContext.outputWriter().println("Hello Programmatically");
-//                });
-//    }
-
-
-
 
 }

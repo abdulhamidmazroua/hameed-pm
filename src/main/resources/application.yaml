@@ -1,5 +1,7 @@
 spring:
   shell:
+    context:
+      close: true
     interactive:
       enabled: true
     command:

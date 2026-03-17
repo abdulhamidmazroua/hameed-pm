@@ -6,60 +6,34 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class VaultFile {
-
     private int iterations;
-    private String saltBase64;
-    private String ivBase64;
-    private String ciphertextBase64;
-    private String hashBase64;
+    private byte[] salt;
+    private byte[] iv;
+    private byte[] ciphertext;
+    private byte[] hash;
 
-    public VaultFile() {};
+    public VaultFile() {}
 
-    public VaultFile(int iterations, String saltBase64, String ivBase64, String ciphertextBase64, String hashBase64) {
+    public VaultFile(int iterations, byte[] salt, byte[] iv, byte[] ciphertext, byte[] hash) {
         this.iterations = iterations;
-        this.saltBase64 = saltBase64;
-        this.ivBase64 = ivBase64;
-        this.ciphertextBase64 = ciphertextBase64;
-        this.hashBase64 = hashBase64;
+        this.salt = salt;
+        this.iv = iv;
+        this.ciphertext = ciphertext;
+        this.hash = hash;
     }
 
-    public int getIterations() {
-        return iterations;
-    }
+    public int getIterations() { return iterations; }
+    public void setIterations(int iterations) { this.iterations = iterations; }
 
-    public void setIterations(int iterations) {
-        this.iterations = iterations;
-    }
+    public byte[] getSalt() { return salt; }
+    public void setSalt(byte[] salt) { this.salt = salt; }
 
-    public String getSaltBase64() {
-        return saltBase64;
-    }
+    public byte[] getIv() { return iv; }
+    public void setIv(byte[] iv) { this.iv = iv; }
 
-    public void setSaltBase64(String saltBase64) {
-        this.saltBase64 = saltBase64;
-    }
+    public byte[] getCiphertext() { return ciphertext; }
+    public void setCiphertext(byte[] ciphertext) { this.ciphertext = ciphertext; }
 
-    public String getIvBase64() {
-        return ivBase64;
-    }
-
-    public void setIvBase64(String ivBase64) {
-        this.ivBase64 = ivBase64;
-    }
-
-    public String getCiphertextBase64() {
-        return ciphertextBase64;
-    }
-
-    public void setCiphertextBase64(String ciphertextBase64) {
-        this.ciphertextBase64 = ciphertextBase64;
-    }
-
-    public String getHashBase64() {
-        return hashBase64;
-    }
-
-    public void setHashBase64(String hashBase64) {
-        this.hashBase64 = hashBase64;
-    }
+    public byte[] getHash() { return hash; }
+    public void setHash(byte[] hash) { this.hash = hash; }
 }

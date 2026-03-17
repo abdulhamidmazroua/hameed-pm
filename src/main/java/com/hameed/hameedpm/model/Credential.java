@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class Credential implements Cloneable {
+public class Credential {
 
     private String serviceName;
     private String username;
@@ -62,6 +62,10 @@ public class Credential implements Cloneable {
         return additionalInfo;
     }
 
+    public void setAdditionalInfo(Map<String, String> additionalInfo) {
+        this.additionalInfo = additionalInfo;
+    }
+
     public boolean addInfo(String key, String value) {
         if (additionalInfo == null) {
             additionalInfo = new LinkedHashMap<>();
@@ -81,16 +85,5 @@ public class Credential implements Cloneable {
         if (!additionalInfo.containsKey(key)) return false;
         additionalInfo.put(key, newValue);
         return true;
-    }
-
-    @Override
-    public Credential clone() {
-        try {
-            Credential clone = (Credential) super.clone();
-            // TODO: copy mutable state here, so the clone can't change the internals of the original
-            return clone;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
     }
 }

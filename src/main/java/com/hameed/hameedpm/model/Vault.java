@@ -12,7 +12,7 @@ import java.util.Optional;
 public class Vault {
 
     private String name;
-    private String signingKey;
+    private byte[] signingKey;
     private List<Credential> credentials = new ArrayList<>();
 
     public Vault() {}
@@ -38,35 +38,11 @@ public class Vault {
         this.credentials = credentials;
     }
 
-    public String getSigningKey() {
+    public byte[] getSigningKey() {
         return signingKey;
     }
 
-    public void setSigningKey(String signingKey) {
+    public void setSigningKey(byte[] signingKey) {
         this.signingKey = signingKey;
-    }
-
-    public void add(Credential credential) {
-        if (credentials.isEmpty())
-            credentials = new ArrayList<>();
-        credentials.add(credential);
-    }
-
-    public boolean remove(String serviceName) {
-        for (Credential credential : credentials) {
-            if (credential.getServiceName().equalsIgnoreCase(serviceName))
-                return credentials.remove(credential);
-        }
-        return false;
-    }
-
-    public Optional<Credential> find(String serviceName) {
-        for (Credential credential : credentials) {
-            if (credential.getServiceName().equalsIgnoreCase(serviceName)) {
-                return Optional.of(credential);
-            }
-        }
-
-        return Optional.empty();
     }
 }

@@ -7,10 +7,10 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface ICredentialService {
-    void addCredential(String serviceName, String username, char[] password, Map<String, String> additionalInfo);
+    void addCredential(Credential credential) throws Exception;
     List<Credential> listCredentials();
-    Optional<Credential> getCredentialByServiceName(String service);
-    boolean updateCredential(String serviceName, Credential updatedCredential);
-    boolean deleteCredential(String serviceName);
+    Optional<Credential> getCredentialByServiceName(String serviceName);
+    void updateCredential(String serviceName, Credential updatedCredential) throws Exception;
+    void deleteCredential(String serviceName) throws Exception;
 
 }
