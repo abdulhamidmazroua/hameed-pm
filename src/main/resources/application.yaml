@@ -1,0 +1,13 @@
+spring:
+  shell:
+    context:
+      close: true
+    interactive:
+      enabled: true
+    command:
+      script:
+        enabled: true
+  profiles:
+    active: prod
+  main:
+    banner-mode: off
