@@ -5,7 +5,7 @@ import com.hameed.hameedpm.model.Vault;
 import com.hameed.hameedpm.model.VaultFile;
 import com.hameed.hameedpm.service.IVaultService;
 import com.hameed.hameedpm.util.CryptoUtil;
-import com.hameed.hameedpm.util.FileStorageUtil;
+import com.hameed.hameedpm.util.VaultFileUtil;
 import com.hameed.hameedpm.util.StringUtil;
 import org.springframework.stereotype.Service;
 
@@ -39,7 +39,7 @@ public class VaultService implements IVaultService {
 
     @Override
     public void persistVault() throws Exception {
-        String vaultFileJson = FileStorageUtil.loadVaultFile(vault.getName());
+        String vaultFileJson = VaultFileUtil.loadVaultFile(vault.getName());
         VaultFile vaultFile  = mapper.readValue(vaultFileJson, VaultFile.class);
 
         byte[] newIv      = CryptoUtil.generateRandomBytes(IV_LENGTH);
@@ -58,7 +58,7 @@ public class VaultService implements IVaultService {
         vaultFile.setCiphertext(ciphertext);
         vaultFile.setHash(hash);
 
-        FileStorageUtil.saveVaultFile(
+        VaultFileUtil.saveVaultFile(
                 mapper.writerWithDefaultPrettyPrinter().writeValueAsString(vaultFile),
                 vault.getName());
     }
@@ -82,7 +82,7 @@ public class VaultService implements IVaultService {
             StringUtil.requireSafeName(vaultName, "vaultName");
 
             VaultFile vaultFile = mapper.readValue(
-                    FileStorageUtil.loadVaultFile(vaultName), VaultFile.class);
+                    VaultFileUtil.loadVaultFile(vaultName), VaultFile.class);
 
             // all fields are already byte[] — no decoding needed
             int    iterations = vaultFile.getIterations();
@@ -115,7 +115,7 @@ public class VaultService implements IVaultService {
 
     @Override
     public boolean vaultExists() {
-        return FileStorageUtil.vaultFileExists(FileStorageUtil.DEFAULT_VAULT_NAME);
+        return VaultFileUtil.vaultFileExists(VaultFileUtil.DEFAULT_VAULT_NAME);
     }
 
     @Override
@@ -148,7 +148,7 @@ public class VaultService implements IVaultService {
             // all byte[] — Jackson encodes to Base64 in JSON automatically
             VaultFile vaultFile = new VaultFile(ITERATIONS, salt, iv, ciphertext, hash);
 
-            FileStorageUtil.saveVaultFile(
+            VaultFileUtil.saveVaultFile(
                     mapper.writerWithDefaultPrettyPrinter().writeValueAsString(vaultFile),
                     vaultName);
 

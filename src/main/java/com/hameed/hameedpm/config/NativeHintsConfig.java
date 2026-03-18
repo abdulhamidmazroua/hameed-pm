@@ -21,6 +21,12 @@ public class NativeHintsConfig {
                     .registerType(VaultFile.class,  MemberCategory.values())
                     .registerType(Vault.class,       MemberCategory.values())
                     .registerType(Credential.class,  MemberCategory.values());
+
+            // Spring Shell component templates — needed by all UI components
+            hints.resources()
+                    .registerPattern("org/springframework/shell/component/*.stg")
+                    .registerPattern("org/springframework/shell/component/view/**")
+                    .registerPattern("org/springframework/shell/component/theme/**");
         }
     }
 }

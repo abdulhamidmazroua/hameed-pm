@@ -1,8 +1,10 @@
 package com.hameed.hameedpm.commands;
 
+import com.hameed.hameedpm.enums.TemplateType;
 import com.hameed.hameedpm.exception.ResourceNotFoundException;
 import com.hameed.hameedpm.model.Credential;
 import com.hameed.hameedpm.service.ICredentialService;
+import com.hameed.hameedpm.service.IIngestionService;
 import com.hameed.hameedpm.service.IVaultService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -24,12 +26,17 @@ public class CommandsConfig {
 
     private final IVaultService authenticationService;
     private final ICredentialService credentialService;
+    private final IIngestionService ingestionService;
     private final ComponentFlow.Builder componentFlowBuilder;
 
     @Autowired
-    public CommandsConfig(IVaultService authenticationService, ICredentialService credentialService, ComponentFlow.Builder componentFlowBuilder) {
+    public CommandsConfig(IVaultService authenticationService,
+                          ICredentialService credentialService,
+                          IIngestionService ingestionService,
+                          ComponentFlow.Builder componentFlowBuilder) {
         this.authenticationService = authenticationService;
         this.credentialService = credentialService;
+        this.ingestionService = ingestionService;
         this.componentFlowBuilder = componentFlowBuilder;
     }
 
@@ -100,7 +107,7 @@ public class CommandsConfig {
                     }
 
                     try {
-                        credentialService.addCredential(new Credential(serviceName, username, password, additionalInfo));
+                        credentialService.saveCredential(new Credential(serviceName, username, password, additionalInfo));
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -199,13 +206,12 @@ public class CommandsConfig {
                                 ComponentFlow.ComponentFlowResult userUpdateResult = componentFlowBuilder.clone().reset()
                                         .withStringInput("username")
                                         .name("Updated Username / Email: ")
-                                        .defaultValue("")
                                         .required()
                                         .and()
                                         .build().run();
 
                                 String updatedUsername = userUpdateResult.getContext().get("username", String.class);
-                                if (updatedUsername == null || updatedUsername.isBlank()) {
+                                if (updatedUsername.isBlank()) {
                                     ctx.outputWriter().println("Error: the updated username cannot be empty.");
                                 } else {
                                     updatedCred.setUsername(updatedUsername);
@@ -222,7 +228,7 @@ public class CommandsConfig {
                                         .build().run();
 
                                 String updatedPassword = passwordUpdateResult.getContext().get("password", String.class);
-                                if (updatedPassword == null || updatedPassword.isBlank()) {
+                                if  (updatedPassword.isBlank()) {
                                     ctx.outputWriter().println("Error: the updated password cannot be empty.");
                                 } else {
                                     updatedCred.setPassword(updatedPassword);
@@ -356,6 +362,59 @@ public class CommandsConfig {
                     }
                 });
     }
+
+    @Bean
+    public Command loadCommand() {
+        return Command.builder()
+                .name("load")
+                .description("Load the vault")
+                .help("Loads the vault. Usage: load <file-path>")
+                .exitStatusExceptionMapper(exceptionMapper())
+                .availabilityProvider(availabilityProvider())
+                .execute(ctx -> {
+                    try {
+                        // get the first argument as file path
+                        CommandArgument filePath = ctx.getArgumentByIndex(0);
+                        if (filePath == null || filePath.value().isBlank()) {
+                            throw new IllegalArgumentException("File path is required. Usage: load <file-path>");
+                        }
+                        ingestionService.ingest(filePath.value(), ctx);
+                        ctx.outputWriter().println("Vault loaded successfully.");
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+
+    // command for getting the template file for users to fill and load their credentials from
+    // let's make it a selector
+    @Bean
+    public Command getTemplateCommand() {
+        return Command.builder()
+                .name("get-template")
+                .description("Get a template file for bulk credential loading")
+                .help("Gets a template file for bulk credential loading. Usage: get-template")
+                .exitStatusExceptionMapper(exceptionMapper())
+                .availabilityProvider(availabilityProvider())
+                .execute(ctx -> {
+                    ComponentFlow.ComponentFlowResult result = componentFlowBuilder.clone()
+                            .reset()
+                            .withSingleItemSelector("templateTypeSelector")
+                            .name("Choose the template type:")
+                            .selectItems(List.of(
+                                    SelectItem.of("CSV", TemplateType.CSV.name())
+                            ))
+                            .and()
+                            .build()
+                            .run();
+
+                    String selectedTemplate = result.getContext().get("templateTypeSelector", String.class);
+                    // this will create the template file in the current working directory and print a success message with the file name
+                    ingestionService.getTemplate(TemplateType.valueOf(selectedTemplate));
+                    ctx.outputWriter().println(selectedTemplate + " template generated successfully.");
+                });
+    }
+
 
     @Bean
     public ExitStatusExceptionMapper exceptionMapper() {

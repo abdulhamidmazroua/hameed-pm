@@ -1,13 +1,10 @@
 package com.hameed.hameedpm.util;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.List;
 
-public class FileStorageUtil {
+public class VaultFileUtil {
 
     private static final String HOME_PATH = System.getProperty("user.home");
     private static final String MAIN_DIR = ".hameed-pm";

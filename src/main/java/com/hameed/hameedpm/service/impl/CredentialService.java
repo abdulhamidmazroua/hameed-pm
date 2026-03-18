@@ -4,11 +4,14 @@ import com.hameed.hameedpm.exception.ResourceNotFoundException;
 import com.hameed.hameedpm.model.Credential;
 import com.hameed.hameedpm.service.ICredentialService;
 import com.hameed.hameedpm.service.IVaultService;
+import com.hameed.hameedpm.util.StringUtil;
+import org.springframework.shell.core.command.CommandContext;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 
 @Service
 public class CredentialService implements ICredentialService {
@@ -20,17 +23,8 @@ public class CredentialService implements ICredentialService {
     }
 
     @Override
-    public void addCredential(Credential credential) throws Exception {
-        if (credential == null || credential.getServiceName() == null || credential.getServiceName().isEmpty()) {
-            throw new IllegalArgumentException("Credential and service name cannot be null or empty");
-        }
-        if (vaultService.getCurrentVault().getCredentials().isEmpty()) {
-            vaultService.getCurrentVault().setCredentials(new ArrayList<>());
-        } else if (getCredentialByServiceName(credential.getServiceName()).isPresent()) {
-            throw new IllegalArgumentException("Credential for service '" + credential.getServiceName() + "' already exists");
-        }
-
-        vaultService.getCurrentVault().getCredentials().add(credential);
+    public void saveCredential(Credential credential) throws Exception {
+        addCredential(credential);
         vaultService.persistVault();
     }
 
@@ -66,4 +60,32 @@ public class CredentialService implements ICredentialService {
         vaultService.persistVault();
     }
 
+    @Override
+    public void addAll(List<Credential> credentials, CommandContext ctx) throws Exception {
+        credentials.forEach(credential -> {
+            try{
+                addCredential(credential);
+            } catch (IllegalArgumentException ex) {
+                ctx.outputWriter().println(ex.getMessage());
+                ctx.outputWriter().flush();
+            }
+        });
+
+        // after all viable credentials added to the vault
+        // persist
+        vaultService.persistVault();
+    }
+
+    private void addCredential(Credential credential) throws IllegalArgumentException {
+        if (credential == null || credential.getServiceName() == null || credential.getServiceName().isEmpty()) {
+            throw new IllegalArgumentException("Credential and service name cannot be null or empty");
+        }
+        if (vaultService.getCurrentVault().getCredentials().isEmpty()) {
+            vaultService.getCurrentVault().setCredentials(new ArrayList<>());
+        } else if (getCredentialByServiceName(credential.getServiceName()).isPresent()) {
+            throw new IllegalArgumentException("Credential for service '" + credential.getServiceName() + "' already exists");
+        }
+
+        vaultService.getCurrentVault().getCredentials().add(credential);
+    }
 }

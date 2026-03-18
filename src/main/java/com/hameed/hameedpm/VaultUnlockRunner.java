@@ -1,11 +1,9 @@
 package com.hameed.hameedpm;
 
 import com.hameed.hameedpm.service.IVaultService;
-import com.hameed.hameedpm.util.FileStorageUtil;
+import com.hameed.hameedpm.util.VaultFileUtil;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -55,7 +53,7 @@ public class VaultUnlockRunner implements CommandLineRunner {
                 System.exit(1);
             }
 
-            vaultSecurityService.createEncryptedVault(FileStorageUtil.DEFAULT_VAULT_NAME, password);
+            vaultSecurityService.createEncryptedVault(VaultFileUtil.DEFAULT_VAULT_NAME, password);
             Arrays.fill(password, '\0');
             Arrays.fill(confirm,  '\0');
 
@@ -68,7 +66,7 @@ public class VaultUnlockRunner implements CommandLineRunner {
         for (int attempt = 1; attempt <= 3; attempt++) {
             char[] password = promptPassword("Master password: ");
 
-            if (vaultSecurityService.unlockVault(FileStorageUtil.DEFAULT_VAULT_NAME, password)) {
+            if (vaultSecurityService.unlockVault(VaultFileUtil.DEFAULT_VAULT_NAME, password)) {
                 Arrays.fill(password, '\0');
                 terminal.writer().println("Vault unlocked. Welcome.");
                 terminal.writer().flush();
