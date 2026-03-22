@@ -6,6 +6,11 @@ import com.hameed.hameedpm.model.Credential;
 import com.hameed.hameedpm.service.ICredentialService;
 import com.hameed.hameedpm.service.IIngestionService;
 import com.hameed.hameedpm.service.IVaultService;
+import com.hameed.hameedpm.util.PasswordUtil;
+import com.hameed.hameedpm.util.StringUtil;
+import com.hameed.hameedpm.util.VaultFileUtil;
+import org.jline.reader.LineReader;
+import org.jline.terminal.Terminal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +21,8 @@ import org.springframework.shell.core.command.exit.ExitStatusExceptionMapper;
 import org.springframework.shell.jline.tui.component.flow.ComponentFlow;
 import org.springframework.shell.jline.tui.component.flow.SelectItem;
 
+import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,20 +31,23 @@ import java.util.Map;
 @Configuration
 public class CommandsConfig {
 
-    private final IVaultService authenticationService;
+    private final IVaultService vaultService;
     private final ICredentialService credentialService;
     private final IIngestionService ingestionService;
     private final ComponentFlow.Builder componentFlowBuilder;
+    private final LineReader lineReader;  // inject Spring Shell's LineReader
 
     @Autowired
-    public CommandsConfig(IVaultService authenticationService,
+    public CommandsConfig(IVaultService vaultService,
                           ICredentialService credentialService,
                           IIngestionService ingestionService,
-                          ComponentFlow.Builder componentFlowBuilder) {
-        this.authenticationService = authenticationService;
+                          ComponentFlow.Builder componentFlowBuilder,
+                          LineReader lineReader) {
+        this.vaultService = vaultService;
         this.credentialService = credentialService;
         this.ingestionService = ingestionService;
         this.componentFlowBuilder = componentFlowBuilder;
+        this.lineReader = lineReader;
     }
 
     // helper to reduce boilerplate on every command
@@ -386,8 +396,6 @@ public class CommandsConfig {
                 });
     }
 
-    // command for getting the template file for users to fill and load their credentials from
-    // let's make it a selector
     @Bean
     public Command getTemplateCommand() {
         return Command.builder()
@@ -415,6 +423,60 @@ public class CommandsConfig {
                 });
     }
 
+    @Bean
+    public Command configCommand() {
+        return Command.builder()
+                .name("config")
+                .description("Configure application settings")
+                .help("A command to configure application settings. Usage: config")
+                .exitStatusExceptionMapper(exceptionMapper())
+                .availabilityProvider(availabilityProvider())
+                .execute(ctx -> {
+                    // You can implement this command to allow users to change application settings like vault location, encryption settings, etc.
+                    ComponentFlow.ComponentFlowResult result = componentFlowBuilder.clone().reset()
+                            .withSingleItemSelector("configOptionSelector")
+                            .name("Choose the setting you want to configure:")
+                            .selectItems(List.of(
+                                    SelectItem.of("Reset Master Password", "resetMasterPassword")
+                            ))
+                            .and().build().run();
+                    String selectedOption = result.getContext().get("configOptionSelector", String.class);
+                    switch (selectedOption) {
+                        case "resetMasterPassword" -> {
+                            // don't use component flow
+                            try {
+                                char[] newPassword = PasswordUtil.promptPassword("Enter New Master Password: ", lineReader);
+                                char[] confirm  = PasswordUtil.promptPassword("Confirm master password: ", lineReader);
+
+                                if (!PasswordUtil.validPassword(newPassword)) {
+                                    ctx.outputWriter().println("Password does not meet strength requirements.");
+                                    printCriteria(ctx);
+                                    ctx.outputWriter().flush();
+                                    Arrays.fill(newPassword, '\0');
+                                    Arrays.fill(confirm,  '\0');
+                                    return;
+                                }
+
+                                if (!Arrays.equals(newPassword, confirm)) {
+                                    ctx.outputWriter().println("Passwords do not match. Exiting.");
+                                    ctx.outputWriter().flush();
+                                    Arrays.fill(newPassword, '\0');
+                                    Arrays.fill(confirm,  '\0');
+                                    return;
+                                }
+
+                                vaultService.createEncryptedVault(VaultFileUtil.DEFAULT_VAULT_NAME, newPassword);
+                                Arrays.fill(newPassword, '\0');
+                                Arrays.fill(confirm,  '\0');
+                                ctx.outputWriter().println("Master password reset successfully.");
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }
+
+                });
+    }
 
     @Bean
     public ExitStatusExceptionMapper exceptionMapper() {
@@ -430,7 +492,7 @@ public class CommandsConfig {
 
     @Bean
     public AvailabilityProvider availabilityProvider() {
-        return () -> authenticationService.isVaultUnlocked()
+        return () -> vaultService.isVaultUnlocked()
                 ? Availability.available()
                 : Availability.unavailable("You cannot use this command unless you have an unlocked vault.");
     }
@@ -438,5 +500,13 @@ public class CommandsConfig {
     private void printCredential(CommandContext ctx, Credential cred) {
         ctx.outputWriter().printf(" username: %s%n password: %s%n", cred.getUsername(), cred.getPassword());
         cred.getAdditionalInfo().forEach((key, value) -> ctx.outputWriter().printf(" %s: %s%n", key, value));
+    }
+
+    private void printCriteria(CommandContext ctx) {
+        ctx.outputWriter().println("Password must be at least 12 characters long and include:");
+        ctx.outputWriter().println("- At least one uppercase letter");
+        ctx.outputWriter().println("- At least one lowercase letter");
+        ctx.outputWriter().println("- At least one digit");
+        ctx.outputWriter().println("- At least one special character (!@#$%^&* etc.)");
     }
 }

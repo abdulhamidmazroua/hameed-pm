@@ -139,7 +139,13 @@ public class VaultService implements IVaultService {
             Vault initialVault = new Vault();
             initialVault.setName(vaultName);
             initialVault.setSigningKey(Arrays.copyOf(signingKey, signingKey.length));
-            initialVault.setCredentials(new ArrayList<>());
+
+            // Password reset: preserve existing credentials; new vault: empty credentials
+            if (vault != null && vaultUnlocked) {
+                initialVault.setCredentials(new ArrayList<>(vault.getCredentials()));
+            } else {
+                initialVault.setCredentials(new ArrayList<>());
+            }
 
             byte[] plaintext  = mapper.writeValueAsBytes(initialVault);
             byte[] ciphertext = CryptoUtil.encrypt(key, plaintext, iv);

@@ -1,6 +1,7 @@
 package com.hameed.hameedpm;
 
 import com.hameed.hameedpm.service.IVaultService;
+import com.hameed.hameedpm.util.PasswordUtil;
 import com.hameed.hameedpm.util.VaultFileUtil;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
@@ -15,11 +16,11 @@ import java.util.Arrays;
 public class VaultUnlockRunner implements CommandLineRunner {
 
     private final LineReader lineReader;  // inject Spring Shell's LineReader
-    private final IVaultService vaultSecurityService;
+    private final IVaultService vaultService;
 
     public VaultUnlockRunner(LineReader lineReader, IVaultService vaultSecurityService) {
         this.lineReader = lineReader;
-        this.vaultSecurityService = vaultSecurityService;
+        this.vaultService = vaultSecurityService;
     }
 
     @Override
@@ -27,16 +28,16 @@ public class VaultUnlockRunner implements CommandLineRunner {
 
         Terminal terminal = lineReader.getTerminal(); // get terminal from the LineReader
 
-        if (!vaultSecurityService.vaultExists()) {
+        if (!vaultService.vaultExists()) {
             terminal.writer().println("No vault found. Let's create one.");
             terminal.writer().println("Your master password will be used to encrypt and protect your vault.");
             printCriteria(terminal);
             terminal.writer().flush();
 
-            char[] password = promptPassword("Set master password: ");
-            char[] confirm  = promptPassword("Confirm master password: ");
+            char[] password = PasswordUtil.promptPassword("Set master password: ", lineReader);
+            char[] confirm  = PasswordUtil.promptPassword("Confirm master password: ", lineReader);
 
-            if (!validPassword(password)) {
+            if (!PasswordUtil.validPassword(password)) {
                 terminal.writer().println("Password does not meet strength requirements.");
                 printCriteria(terminal);
                 terminal.writer().flush();
@@ -53,7 +54,7 @@ public class VaultUnlockRunner implements CommandLineRunner {
                 System.exit(1);
             }
 
-            vaultSecurityService.createEncryptedVault(VaultFileUtil.DEFAULT_VAULT_NAME, password);
+            vaultService.createEncryptedVault(VaultFileUtil.DEFAULT_VAULT_NAME, password);
             Arrays.fill(password, '\0');
             Arrays.fill(confirm,  '\0');
 
@@ -64,9 +65,9 @@ public class VaultUnlockRunner implements CommandLineRunner {
 
         // Vault exists — prompt to unlock, allow 3 attempts
         for (int attempt = 1; attempt <= 3; attempt++) {
-            char[] password = promptPassword("Master password: ");
+            char[] password = PasswordUtil.promptPassword("Master password: ", lineReader);
 
-            if (vaultSecurityService.unlockVault(VaultFileUtil.DEFAULT_VAULT_NAME, password)) {
+            if (vaultService.unlockVault(VaultFileUtil.DEFAULT_VAULT_NAME, password)) {
                 Arrays.fill(password, '\0');
                 terminal.writer().println("Vault unlocked. Welcome.");
                 terminal.writer().flush();
@@ -87,22 +88,6 @@ public class VaultUnlockRunner implements CommandLineRunner {
         System.exit(1);
     }
 
-    private char[] promptPassword(String prompt) {
-        String input = lineReader.readLine(prompt, '*');
-        return input != null ? input.toCharArray() : new char[0];
-    }
-
-    private boolean validPassword(char[] password) {
-        if (password.length < 12) return false;
-        boolean hasUpper = false, hasLower = false, hasDigit = false, hasSpecial = false;
-        for (char c : password) {
-            if (Character.isUpperCase(c))      hasUpper = true;
-            else if (Character.isLowerCase(c)) hasLower = true;
-            else if (Character.isDigit(c))     hasDigit = true;
-            else if ("!@#$%^&*()_+-=[]{}|;':\",.<>/?".indexOf(c) >= 0) hasSpecial = true;
-        }
-        return hasUpper && hasLower && hasDigit && hasSpecial;
-    }
 
     private void printCriteria(Terminal terminal) {
         terminal.writer().println("Password must be at least 12 characters long and include:");
