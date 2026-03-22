@@ -671,7 +671,7 @@ Built with amazing open-source projects:
 
 ## 📝 License
 
-MIT License - See [LICENSE](./LICENSE) file
+MIT License
 
 ---
 
